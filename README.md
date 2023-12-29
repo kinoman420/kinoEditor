@@ -1,1 +1,1 @@
-A Vert Simple Text editor written in C
+A Very Simple Text editor written in C
