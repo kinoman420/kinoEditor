@@ -11,6 +11,8 @@
 /***defines***/
 
 #define CTRL_KEY(k) ((k) & 0x1f)
+#define KINO_VERSION "0.0.1"
+
 
 
 
@@ -18,6 +20,7 @@
 /*** data ***/
 
 struct editorConfig {
+    int cx, cy;
     int screenrows;
     int screencols;
     struct termios orig_termios;
@@ -158,12 +161,28 @@ void abFree(struct abuf *ab) {
 
 void editorDrawRows(struct abuf *ab) {
     int y;
-    for ( y=0; y < E.screenrows; y++) {
-        abAppend(ab,"~",1);
-
-        if ( y < E.screenrows - 1) {
-            abAppend(ab,"\r\n", 2);
+    for ( y = 0; y < E.screenrows; y++) {
+        if ( y == E.screenrows / 3) {
+            char welcome[80];
+            int welcomelen = snprintf(welcome, sizeof(welcome), "Kino editor -- version %s", KINO_VERSION);
+            if(welcomelen > E.screencols) welcomelen = E.screencols;
+            int padding = (E.screencols - welcomelen) / 2;
+            if (padding) {
+                abAppend(ab, "~", 1);
+                padding--;
+            }
+            while (padding--) abAppend(ab, " ", 1);
+            abAppend(ab, welcome, welcomelen);
+        } else {
+            abAppend(ab, "~", 1);
         }
+
+        abAppend(ab, "\x1b[K", 3);
+        if ( y < E.screenrows - 1) {
+            abAppend(ab, "\r\n", 2);
+        }
+        
+
     }
 }
 
@@ -173,13 +192,21 @@ void editorRefreshScreen(){
 
     // we write escape character using this. the J command clears the screen and the argument is 2
     // H command is cursor reposition
+    // l is reset mode,h is set mode, ?25 argument is a newer VT100 protocol
+    // J is removed because we added [K in editorDrawRows
+    // K removes part of current line. the argument specifies the behaviour
 
-    abAppend(&ab, "\x1b[2J", 4);
+    abAppend(&ab, "\x1b[?25l", 6);
+    
     abAppend(&ab, "\x1b[H", 3);
 
     editorDrawRows(&ab);
 
-    abAppend(&ab, "\x1b[H", 3);
+    char buf[32];
+    snprintf(buf, sizeof(buf), "\x1b[%d;%dH", E.cy + 1, E.cx + 1);
+    abAppend(&ab, buf, strlen(buf));
+
+    abAppend(&ab, "\x1b[?25h", 6);
 
     write(STDOUT_FILENO, ab.b, ab.len);
     abFree(&ab);
@@ -189,6 +216,23 @@ void editorRefreshScreen(){
 
 
 /*** input ***/
+
+void editorMoveCursor(char key) {
+    switch(key) {
+        case 'a':
+            E.cx--;
+            break;
+        case 'd':
+            E.cx++;
+            break;
+        case 'w':
+            E.cy--;
+            break;
+        case 's':
+            E.cy++;
+            break;  
+    }
+}
 
 
 //handles the input from editorReadkey
@@ -201,6 +245,13 @@ void editorProcessKeyPress() {
         write(STDOUT_FILENO, "\x1b[H", 3);
         exit(0);
         break;
+
+        case 'w':
+        case 's':
+        case 'a':
+        case 'd':
+            editorMoveCursor(c);
+            break;
     }
 }
 
@@ -211,6 +262,9 @@ void editorProcessKeyPress() {
 // initializes row and col sizes
 
 void initEditor() {
+
+    E.cx = 0;
+    E.cy = 0;
     if (getWindowSize(&E.screenrows, &E.screencols) == -1)die("getWindowSize");
 }
 
