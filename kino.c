@@ -12,6 +12,12 @@
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 #define KINO_VERSION "0.0.1"
+enum editorKey {
+  ARROW_LEFT = 1000,
+  ARROW_RIGHT,
+  ARROW_UP,
+  ARROW_DOWN
+};
 
 
 
@@ -79,14 +85,39 @@ void enableRawMode() {
 }
 
 
-//simplified main, this function waits for keypress and returns it
-char editorReadKey() {
+// simplified main, this function waits for keypress and returns it
+// if the read character is an escape sequence we read to more bytes into seq
+// if it times then the user inputted esc.otherwise we check if the escape sequence is arrow key
+// then return the corresponding w,a,s,d key
+
+int editorReadKey() {
     int nread;
     char c;
     while (( nread = read(STDIN_FILENO, &c, 1)) != 1) {
         if (nread == -1 && errno != EAGAIN) die("read");
     }
-    return c;
+
+    if (c == '\x1b') {
+        char seq[3];
+
+        if (read(STDIN_FILENO, &seq[0], 1) != 1) return '\x1b';
+        if (read(STDIN_FILENO, &seq[1], 1) != 1) return '\x1b';
+
+        if (seq[0] == '[') {
+            switch (seq[1]) {
+                case 'A': return ARROW_UP;
+                case 'B': return ARROW_DOWN;
+                case 'C': return ARROW_RIGHT;
+                case 'D': return ARROW_LEFT;
+            }
+        }
+
+        return '\x1b';
+
+    } else {
+        return c;
+    }
+    
 }
 
 
@@ -217,19 +248,27 @@ void editorRefreshScreen(){
 
 /*** input ***/
 
-void editorMoveCursor(char key) {
+void editorMoveCursor(int key) {
     switch(key) {
-        case 'a':
-            E.cx--;
+        case ARROW_LEFT:
+            if (E.cx != 0) {
+                E.cx--;
+            }
             break;
-        case 'd':
-            E.cx++;
+        case ARROW_RIGHT:
+            if (E.cx != E.screencols -1) {
+                E.cx++;
+            }
             break;
-        case 'w':
-            E.cy--;
+        case ARROW_UP:
+            if (E.cy != 0) {
+                E.cy--;
+            }
             break;
-        case 's':
-            E.cy++;
+        case ARROW_DOWN:
+            if (E.cy != E.screenrows - 1) {
+                E.cy++;
+            }
             break;  
     }
 }
@@ -237,7 +276,7 @@ void editorMoveCursor(char key) {
 
 //handles the input from editorReadkey
 void editorProcessKeyPress() {
-    char c = editorReadKey();
+    int c = editorReadKey();
 
     switch (c) {
         case CTRL_KEY('q'):
@@ -246,10 +285,10 @@ void editorProcessKeyPress() {
         exit(0);
         break;
 
-        case 'w':
-        case 's':
-        case 'a':
-        case 'd':
+        case ARROW_UP:
+        case ARROW_DOWN:
+        case ARROW_LEFT:
+        case ARROW_RIGHT:
             editorMoveCursor(c);
             break;
     }
