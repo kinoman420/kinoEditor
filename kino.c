@@ -10,6 +10,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <string.h>
 #include <time.h>
 #include <stdarg.h>
@@ -306,6 +307,28 @@ void editorInsertChar(int c) {
  
 /*** file i/o ***/
 
+
+
+// calculate length of each row, append it to buflen, loop and memcopy, return buf
+char *editorRowsToString(int *buflen) {
+    int totlen = 0;
+    int j;
+    for (j = 0; j < E.numrows; j++)
+        totlen += E.row[j].size + 1;
+    *buflen = totlen;
+
+    char *buf = malloc(totlen);
+    char *p = buf;
+    for (j = 0; j < E.numrows; j++) {
+        memcpy(p, E.row[j].chars, E.row[j].size);
+        p += E.row[j].size;
+        *p = '\n';
+        p++;
+    }
+
+    return buf;
+}
+
 void editorOpen(char *filename) {
 
     // strdup makes a copy of the given string, allocating the required memory and assumes the user will
@@ -331,6 +354,21 @@ void editorOpen(char *filename) {
     fclose(fp);
 
     
+}
+
+void editorSave() {
+    if (E.filename == NULL) return;
+
+    int len;
+    char *buf = editorRowsToString(&len);
+
+    int fd = open(E.filename, O_RDWR | O_CREAT, 0644);  // 0644 argument give permission to read/write
+
+    // safe way to not lose data if ftruncate succeeds but write fails
+    ftruncate(fd, len);
+    write(fd, buf, len);
+    close(fd);
+    free(buf);
 }
 
 
@@ -561,6 +599,11 @@ void editorProcessKeyPress() {
             write(STDOUT_FILENO, "\x1b[H", 3);
             exit(0);
             break;
+
+
+        case CTRL_KEY('s'):
+            editorsave();
+            break;          
 
         case HOME_KEY:
             E.cx = 0;
