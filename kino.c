@@ -24,6 +24,9 @@
 #define KINO_VERSION "0.0.1"
 #define KINO_TAB_STOP 8
 enum editorKey {
+
+    // backspace doesn't have a human readable escape sequence representation 
+  BACKSPACE = 127,  
   ARROW_LEFT = 1000,
   ARROW_RIGHT,
   ARROW_UP,
@@ -547,6 +550,12 @@ void editorProcessKeyPress() {
     int c = editorReadKey();
 
     switch (c) {
+
+        case '\r':
+
+            break;
+
+        
         case CTRL_KEY('q'):
             write(STDOUT_FILENO, "\x1b[2J", 4);
             write(STDOUT_FILENO, "\x1b[H", 3);
@@ -561,6 +570,13 @@ void editorProcessKeyPress() {
             if (E.cy < E.numrows)
                 E.cx = E.row[E.cy].size;
             break;
+
+        case BACKSPACE:
+        case CTRL_KEY('h'):
+        case DEL_KEY:
+
+            break;
+
 
 
         case PAGE_UP:
@@ -586,6 +602,12 @@ void editorProcessKeyPress() {
         case ARROW_RIGHT:
             editorMoveCursor(c);
             break;
+
+
+        case CTRL_KEY('l'):
+        case '\x1b':
+            break;
+        
         default:
             editorInsertChar(c);
             break;
