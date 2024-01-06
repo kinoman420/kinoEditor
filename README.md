@@ -9,10 +9,10 @@ How to run:
 
 1) on windows:
 
-    >install cygwin. put "kino.c" file in cygwin home directory<
+    >install cygwin. put "kino.c" file in cygwin home directory />
  then:
-    >run "cc kino.c -o kino"<
+    >run "cc kino.c -o kino" />
 then:
-    >run "./kino"<
+    >run "./kino" />
 
 2) this program should work on linux and WSL since it uses POSIX and termios Header file which are supported natively on UNIX, but this is not tested
