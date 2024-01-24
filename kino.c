@@ -22,7 +22,7 @@
 /***defines***/
 
 #define CTRL_KEY(k) ((k) & 0x1f)
-#define KINO_VERSION "0.0.1"
+#define KINO_VERSION "1.0.0"
 #define KINO_TAB_STOP 8
 #define KINO_QUIT_TIMES 3
 
@@ -559,7 +559,7 @@ void editorDrawRows(struct abuf *ab) {
             if (E.numrows == 0 && y == E.screenrows / 3) {
                 char welcome[80];
                 int welcomelen = snprintf(welcome, sizeof(welcome),
-                "Kilo editor -- version %s", KINO_VERSION);
+                "Kino editor -- version %s", KINO_VERSION);
                 if (welcomelen > E.screencols) welcomelen = E.screencols;
                 int padding = (E.screencols - welcomelen) / 2;
                 if (padding) {
